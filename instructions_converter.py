@@ -6,23 +6,24 @@ from io import BytesIO
 st.set_page_config(page_title="Products Special Instruction Reviewer & Importer", layout="wide")
 st.title("🛠️ Products Special Instruction Reviewer & Importer")
 
-# === Translation Dictionary ===
-translation_dict = {
-    "Fresh cut": "مقطع طازج",
-    "Medium slices": "شرائح متوسطة",
-    "Regular Cut": "تقطيع عادى",
-    "Fine Grated": "مبشور ناعم",
-    "Whole piece": "قطعة واحدة",
-    "Rough Grated": "مبشور خشن",
-    "Sandwich slices": "شرائح للساندويتش",
-    "Thick slices": "شرائح سميكة",
-    "Thin slices": "شرائح رفيعة",
-    "Medium cubes": "مكعبات متوسطة",
-    "Big cubes": "مكعبات كبيرة",
-    "Small cubes": "مكعبات صغيرة",
-    "Ball": "كُرة",
-    "Large cubes": "مكعبات كبيرة"
-}
+# === Initialize session-state dictionary ===
+if "translation_dict" not in st.session_state:
+    st.session_state.translation_dict = {
+        "Fresh cut": "مقطع طازج",
+        "Medium slices": "شرائح متوسطة",
+        "Regular Cut": "تقطيع عادى",
+        "Fine Grated": "مبشور ناعم",
+        "Whole piece": "قطعة واحدة",
+        "Rough Grated": "مبشور خشن",
+        "Sandwich slices": "شرائح للساندويتش",
+        "Thick slices": "شرائح سميكة",
+        "Thin slices": "شرائح رفيعة",
+        "Medium cubes": "مكعبات متوسطة",
+        "Big cubes": "مكعبات كبيرة",
+        "Small cubes": "مكعبات صغيرة",
+        "Ball": "كُرة",
+        "Large cubes": "مكعبات كبيرة"
+    }
 
 # === Upload Excel File ===
 st.header("1. Upload Your Excel File")
@@ -43,12 +44,12 @@ if uploaded_file:
             else:
                 df["Arabic Instructions"] = ""
 
-        # Translation process
+        # === Step 2: Translation Phase ===
         unmatched_terms = set()
         for i, row in df.iterrows():
             en = str(row["English Instructions"]).strip()
-            if en in translation_dict:
-                ar = translation_dict[en]
+            if en in st.session_state.translation_dict:
+                ar = st.session_state.translation_dict[en]
             elif en.isdigit():
                 ar = en
             elif pd.notna(row["Arabic Instructions"]):
@@ -58,14 +59,26 @@ if uploaded_file:
                 ar = ""
             df.at[i, "Arabic Instructions"] = ar
 
-        # === Step 2: Review Translation Results ===
-        st.header("2. Review Translation Results")
+        st.header("2. Manual Translation for Missing Terms")
+        new_translations = {}
         if unmatched_terms:
-            st.warning("Untranslated English terms found:")
-            for term in sorted(unmatched_terms):
-                st.write(f"- {term}")
-        else:
-            st.success("✅ All terms translated or valid SKUs.")
+            st.warning("These English instructions need translation:")
+            with st.form("manual_translation_form"):
+                for term in sorted(unmatched_terms):
+                    new_translations[term] = st.text_input(f"{term}", key=f"translate_{term}")
+                submitted = st.form_submit_button("Apply Translations")
+
+                if submitted:
+                    for k, v in new_translations.items():
+                        if v.strip():
+                            st.session_state.translation_dict[k] = v.strip()
+
+                    # Apply new translations
+                    for i, row in df.iterrows():
+                        en = str(row["English Instructions"]).strip()
+                        if en in st.session_state.translation_dict:
+                            df.at[i, "Arabic Instructions"] = st.session_state.translation_dict[en]
+                    st.success("✅ Manual translations applied!")
 
         # === Step 3: Check for Inconsistencies ===
         st.header("3. Check for Instruction Inconsistencies")
