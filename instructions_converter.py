@@ -3,13 +3,13 @@ import pandas as pd
 from collections import defaultdict
 from io import BytesIO
 
-st.title("Instruction Localizer and Magento CSV Generator")
+st.title("Products Special Instruction Reviewer & Importer")
 
 # === Translation Dictionary ===
 translation_dict = {
     "Fresh cut": "مقطع طازج",
     "Medium slices": "شرائح متوسطة",
-    "Regular Cut": "تقطيع منتظم",
+    "Regular Cut": "تقطيع عادى",
     "Fine Grated": "مبشور ناعم",
     "Whole piece": "قطعة واحدة",
     "Rough Grated": "مبشور خشن",
