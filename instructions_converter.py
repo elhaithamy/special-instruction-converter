@@ -3,7 +3,8 @@ import pandas as pd
 from collections import defaultdict
 from io import BytesIO
 
-st.title("Products Special Instruction Reviewer & Importer")
+st.set_page_config(page_title="Products Special Instruction Reviewer & Importer", layout="wide")
+st.title("🛠️ Products Special Instruction Reviewer & Importer")
 
 # === Translation Dictionary ===
 translation_dict = {
@@ -42,6 +43,7 @@ if uploaded_file:
             else:
                 df["Arabic Instructions"] = ""
 
+        # Translation process
         unmatched_terms = set()
         for i, row in df.iterrows():
             en = str(row["English Instructions"]).strip()
@@ -56,16 +58,16 @@ if uploaded_file:
                 ar = ""
             df.at[i, "Arabic Instructions"] = ar
 
-        # === Review Translation Results ===
+        # === Step 2: Review Translation Results ===
         st.header("2. Review Translation Results")
         if unmatched_terms:
             st.warning("Untranslated English terms found:")
-            for t in sorted(unmatched_terms):
-                st.write(f"- {t}")
+            for term in sorted(unmatched_terms):
+                st.write(f"- {term}")
         else:
             st.success("✅ All terms translated or valid SKUs.")
 
-        # === Check for Inconsistencies ===
+        # === Step 3: Check for Inconsistencies ===
         st.header("3. Check for Instruction Inconsistencies")
         filtered = df[
             ~((df["English Instructions"].astype(str) == df["Arabic Instructions"].astype(str)) &
@@ -82,7 +84,7 @@ if uploaded_file:
         else:
             st.success("✅ No inconsistencies found.")
 
-        # === Confirm Instructions ===
+        # === Step 4: Review and Confirm Instructions ===
         st.header("4. Review and Confirm Instructions")
         instruction_rows = df[
             ~((df["English Instructions"] == df["Arabic Instructions"]) &
@@ -96,8 +98,7 @@ if uploaded_file:
 
         st.dataframe(unique_instructions)
 
-        if st.button("Confirm Instructions and Generate Magento CSV"):
-            # === Create Magento Rows ===
+        if st.button("✅ Confirm Instructions and Generate Magento CSV"):
             rows = []
             current_sku = None
             for _, row in df.iterrows():
@@ -117,6 +118,7 @@ if uploaded_file:
                             "instruction_ar": ar
                         })
 
+            # === Group Instructions by SKU ===
             magento_rows = []
             sku_grouped = defaultdict(list)
             for row in rows:
@@ -148,7 +150,7 @@ if uploaded_file:
 
             magento_df = pd.DataFrame(magento_rows)
 
-            # === In-memory File Creation ===
+            # === Create Files for Download ===
             excel_bytes = BytesIO()
             df.to_excel(excel_bytes, index=False, engine='openpyxl')
             excel_bytes.seek(0)
@@ -157,10 +159,10 @@ if uploaded_file:
             magento_df.to_csv(csv_bytes, index=False, encoding="utf-8-sig")
             csv_bytes.seek(0)
 
+            # === Step 5: Download Results ===
+            st.header("5. Download Results")
             st.success("✅ Files generated successfully!")
 
-            # === Download Buttons ===
-            st.header("5. Download Results")
             st.download_button(
                 label="⬇️ Download Localized Excel",
                 data=excel_bytes,
@@ -177,5 +179,6 @@ if uploaded_file:
 
     except Exception as e:
         st.error(f"❌ Error: {e}")
+
 else:
-    st.info("Please upload a file to get started.")
+    st.info("📂 Please upload a file to get started.")
